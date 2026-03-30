@@ -76,10 +76,17 @@ void BasicPitch::transcribeToMIDI(float* inAudio, int inNumSamples)
     // reset() → all-zero state is identical to processing zero frames.
     // Saves num_lh_frames (~10) CNN frame inferences per call.
 
-    // Run the CNN with real inputs and discard outputs (only for num_lh_frames)
-    for (size_t frame_idx = 0; frame_idx < num_lh_frames; frame_idx++) {
+    // Run the CNN with real inputs and discard outputs (warmup).
+    // Use real CQT for available frames; zeros for any beyond mNumFrames
+    // (short windows may have fewer frames than the lookahead).
+    const size_t warmup_real = std::min(num_lh_frames, mNumFrames);
+    for (size_t frame_idx = 0; frame_idx < warmup_real; frame_idx++) {
         mBasicPitchCNN.frameInference(
             stacked_cqt + frame_idx * NUM_HARMONICS * NUM_FREQ_IN, mContoursPG[0], mNotesPG[0], mOnsetsPG[0]);
+    }
+    for (size_t frame_idx = warmup_real; frame_idx < num_lh_frames; frame_idx++) {
+        mBasicPitchCNN.frameInference(
+            zero_stacked_cqt.data(), mContoursPG[0], mNotesPG[0], mOnsetsPG[0]);
     }
 
     // Run the CNN with real inputs and correct outputs
