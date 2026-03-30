@@ -97,12 +97,19 @@ void BasicPitch::transcribeToMIDI(float* inAudio, int inNumSamples)
                                       mOnsetsPG[frame_idx - num_lh_frames]);
     }
 
-    // Run end with zeroes as input and last frames as output
+    // Run end with zeroes as input and last frames as output.
+    // When mNumFrames < num_lh_frames (short windows), early iterations
+    // would produce negative output indices — discard those into [0].
     for (size_t frame_idx = mNumFrames; frame_idx < mNumFrames + num_lh_frames; frame_idx++) {
-        mBasicPitchCNN.frameInference(zero_stacked_cqt.data(),
-                                      mContoursPG[frame_idx - num_lh_frames],
-                                      mNotesPG[frame_idx - num_lh_frames],
-                                      mOnsetsPG[frame_idx - num_lh_frames]);
+        if (frame_idx >= num_lh_frames) {
+            mBasicPitchCNN.frameInference(zero_stacked_cqt.data(),
+                                          mContoursPG[frame_idx - num_lh_frames],
+                                          mNotesPG[frame_idx - num_lh_frames],
+                                          mOnsetsPG[frame_idx - num_lh_frames]);
+        } else {
+            mBasicPitchCNN.frameInference(zero_stacked_cqt.data(),
+                                          mContoursPG[0], mNotesPG[0], mOnsetsPG[0]);
+        }
     }
 
     mNoteEvents = mNotesCreator.convert(mNotesPG, mOnsetsPG, mContoursPG, mParams, true);
