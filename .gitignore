@@ -24,5 +24,4 @@ xcschememanagement.plist
 Makefile
 *.ort
 onnxruntime*.tar.gz
-ThirdParty/onnxruntime
 /Installers/Windows/Output/
